@@ -1,20 +1,36 @@
-name: Build
+name: Build and Push
 
 on:
   push:
-    
+    branches:
+      - master
+
 jobs:
   build:
     runs-on: ubuntu-18.04
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-    - name: Build Images for dev
+    - name: Build Docker image
       run: |
-          docker build -t test .
-          docker run -d -p 80:80 test
-          docker ps
-    - uses: azure/container-scan@v0
+        docker build -t test .
+        docker run -d -p 80:80 test
+        docker ps
+
+    - name: Azure Container Scan
+      uses: azure/container-scan@v0
       with:
         image-name: test
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Push Docker image to Docker Hub
+      run: |
+        docker tag test granjithreddy/test:latest
+        docker push granjithreddy/test:latest
